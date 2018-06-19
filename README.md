@@ -7,7 +7,7 @@ $ volume
 |▅▅▅▅▅▅▅▅▅▅     |
 
 $ volume notification
-|▅▅▅▅▅▅▅        |
+|▅▅▅▅   |
 
 ```
 
