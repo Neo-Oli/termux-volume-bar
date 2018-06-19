@@ -1,0 +1,59 @@
+#!/bin/bash
+
+setvol(){
+    # Because termux-volume is very slow, we do it asynchronously to make the volume bar more responsive visually.
+    # Because to avoid race conditions as much as possible we kill the previous termux-volume call
+    if [ "$pid" != "0" ];then
+        kill $pid 2>/dev/null
+        wait $pid 2>/dev/null
+    fi
+    termux-volume $channel $1 &
+    pid=$!
+}
+channel=music
+if [ -n "$1" ];then
+    channel=$1;
+fi
+pid=0
+arrowup='\[A'
+arrowdown='\[B'
+arrowrt='\[C'
+arrowlt='\[D'
+stty -echo
+json=$(termux-volume)
+vol=$(echo "$json" | jq ".[] | select(.stream==\"$channel\").volume")
+max=$(echo "$json" | jq ".[] | select(.stream==\"$channel\").max_volume")
+maxminusone=$((max-1))
+oldtime=0
+while true;do
+    bar="|"
+    for i in `seq 0 $maxminusone`;do
+        if [ $i -ge $vol ];then
+            bar+=" "
+        else
+            bar+="▅"
+        fi
+    done
+    bar+="|"
+    echo -ne "$bar\r"
+    read -s -t 3 -n 3 key
+    old=$vol
+    echo -n "$key"|grep -q "$arrowrt" && vol=$((vol+1))
+    echo -n "$key"|grep -q "$arrowlt" && vol=$((vol-1))
+    if [ "$vol" -gt $max ];then
+        vol=$max
+    fi
+    if [ "$vol" -lt 0 ];then
+        vol=0
+    fi
+    # Only do something if volume has changed ( a supported key has been pressed)
+    if [ "$vol" != "$old" ];then
+        oldtime=$(date +%s)
+        setvol $vol
+    fi
+    #Because killing the previous termux-volume in the asynchronous call can sometimes lead to race conditions, we set the volume again after a few seconds
+    if [ "$((oldtime+3))" -lt $(date +%s) ] && [ "$oldtime" != 0 ];then
+        oldtime=0
+        setvol $vol
+    fi
+done
