@@ -11,7 +11,7 @@ $ volume notification
 
 ```
 
-Use arrow keys to move volume bar
+Use arrow keys to move volume bar, use `q` to exit
 
 ## Requirements
 
