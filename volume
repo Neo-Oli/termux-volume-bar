@@ -10,6 +10,14 @@ setvol(){
     termux-volume $channel $1 &
     pid=$!
 }
+getvol(){
+    if [ -z "$1" ];then
+        json=$(termux-volume)
+    else
+        json="$1"
+    fi
+    echo "$json" | jq ".[] | select(.stream==\"$channel\").volume"
+}
 channel=music
 if [ -n "$1" ];then
     channel=$1;
@@ -21,7 +29,7 @@ arrowrt='\[C'
 arrowlt='\[D'
 stty -echo
 json=$(termux-volume)
-vol=$(echo "$json" | jq ".[] | select(.stream==\"$channel\").volume")
+vol=$(getvol "$json")
 max=$(echo "$json" | jq ".[] | select(.stream==\"$channel\").max_volume")
 maxminusone=$((max-1))
 oldtime=0
@@ -36,24 +44,29 @@ while true;do
     done
     bar+="|"
     echo -ne "$bar\r"
-    read -s -t 3 -n 3 key
-    old=$vol
-    echo -n "$key"|grep -q "$arrowrt" && vol=$((vol+1))
-    echo -n "$key"|grep -q "$arrowlt" && vol=$((vol-1))
-    if [ "$vol" -gt $max ];then
-        vol=$max
-    fi
-    if [ "$vol" -lt 0 ];then
-        vol=0
-    fi
-    # Only do something if volume has changed ( a supported key has been pressed)
-    if [ "$vol" != "$old" ];then
-        oldtime=$(date +%s)
-        setvol $vol
-    fi
-    #Because killing the previous termux-volume in the asynchronous call can sometimes lead to race conditions, we set the volume again after a few seconds
-    if [ "$((oldtime+3))" -lt $(date +%s) ] && [ "$oldtime" != 0 ];then
-        oldtime=0
-        setvol $vol
+    read -s -t 5 -n 3 key
+    if [ -n "$key" ];then
+        old=$vol
+        echo -n "$key"|grep -q "$arrowrt" && vol=$((vol+1))
+        echo -n "$key"|grep -q "$arrowlt" && vol=$((vol-1))
+        echo -n "$key"|grep -q "q" && exit 0
+        if [ "$vol" -gt $max ];then
+            vol=$max
+        fi
+        if [ "$vol" -lt 0 ];then
+            vol=0
+        fi
+        # Only do something if volume has changed ( a supported key has been pressed)
+        if [ "$vol" != "$old" ];then
+            oldtime=$(date +%s)
+            setvol $vol
+        fi
+        #Because killing the previous termux-volume in the asynchronous call can sometimes lead to race conditions, we set the volume again after a few seconds
+        if [ "$((oldtime+3))" -lt $(date +%s) ] && [ "$oldtime" != 0 ];then
+            oldtime=0
+            setvol $vol
+        fi
+    else
+        vol=$(getvol)
     fi
 done
