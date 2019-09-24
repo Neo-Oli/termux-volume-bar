@@ -60,9 +60,9 @@ while true;do
         fi
     done
     bar+="\e[0;30m\e[${color_border}m"
-    bar+="| "
+    bar+="|"
     bar+="\e[0;30m\e[${color_num}m"
-    bar+="$vol"
+    bar+=`printf "% 3d\n" $vol`
     bar+="\e[0m"
     echo -ne "$bar\r"
     read -s -t 5 -n 3 key
