@@ -22,6 +22,16 @@ channel=music
 if [ -n "$1" ];then
     channel=$1;
 fi
+# Config
+color_border=37
+color_bar_low=32
+color_bar_high=31
+color_num=33
+# /Config
+config_path="$HOME/.config/termux-volume-bar/config"
+if [ -e "$config_path" ];then
+    source "$config_path"
+fi
 pid=0
 arrowup='\[A'
 arrowdown='\[B'
@@ -32,17 +42,28 @@ json=$(termux-volume)
 vol=$(getvol "$json")
 max=$(echo "$json" | jq ".[] | select(.stream==\"$channel\").max_volume")
 maxminusone=$((max-1))
+high_threshold=$((max/3*2))
 oldtime=0
 while true;do
-    bar="|"
+    bar="\e[0;30m\e[${color_border}m"
+    bar+="|"
     for i in `seq 0 $maxminusone`;do
         if [ $i -ge $vol ];then
             bar+=" "
         else
+            if [ $i -le $high_threshold ];then
+                bar+="\e[0;30m\e[${color_bar_low}m"
+            else
+                bar+="\e[0;30m\e[${color_bar_high}m"
+            fi
             bar+="▅"
         fi
     done
-    bar+="|"
+    bar+="\e[0;30m\e[${color_border}m"
+    bar+="| "
+    bar+="\e[0;30m\e[${color_num}m"
+    bar+="$vol"
+    bar+="\e[0m"
     echo -ne "$bar\r"
     read -s -t 5 -n 3 key
     if [ -n "$key" ];then

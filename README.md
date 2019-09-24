@@ -19,3 +19,6 @@ Use arrow keys to move volume bar, use `q` to exit
 `termux-api`
 
 
+## Configuration
+
+You can configure the colors of the elements. Copy the `config` file to `$HOME/.config/termux-volume-bar/config`.
