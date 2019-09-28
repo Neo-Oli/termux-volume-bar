@@ -16,6 +16,9 @@ getvol(){
     else
         json="$1"
     fi
+    if [ -z "$json" ]; then
+        echo 0
+    fi
     echo "$json" | jq ".[] | select(.stream==\"$channel\").volume"
 }
 channel=music
